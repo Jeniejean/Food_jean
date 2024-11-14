@@ -57,9 +57,6 @@ ORDER BY Count DESC
 curs.execute(query1)
 df_foods = pd.DataFrame(curs, columns=[item[0] for item in curs.description])
 
-# Debugging: Check the columns of the DataFrame
-print("Columns in df_foods:", df_foods.columns)
-
 # Query 3: Total View Time by Gender
 query3 = f"""
 SELECT GENDER, SUM(CAST(VIEWTIME AS LONG)) as TotalViewTime
@@ -81,9 +78,6 @@ ORDER BY GENDER, Count DESC
 curs.execute(query2)
 df_food_gender = pd.DataFrame(curs, columns=[item[0] for item in curs.description])
 
-# Debugging: Check the columns of df_food_gender
-print("Columns in df_food_gender:", df_food_gender.columns)
-
 # Pivot table to reformat the DataFrame
 df_food_gender_pivot = df_food_gender.pivot(index='GENDER', columns='FOOD', values='Count').fillna(0)
 
@@ -99,59 +93,14 @@ curs.execute(query4)
 df_viewtime_region = pd.DataFrame(curs, columns=[item[0] for item in curs.description])
 df_viewtime_region_filtered = df_viewtime_region[df_viewtime_region['REGIONID'].isin(selected_regions)]
 
+# Define a custom color scale with pink tones
+pink_colorscale = ["#F1C6D9", "#F080A5", "#F0518E", "#F0216D", "#D0155C", "#C41254"]
+
 # Create the first row layout with wider columns
 col1, col2 = st.columns([3, 3])  # Adjust proportions to allocate more space
 
 with col1:
-    # Horizontal bar chart sorted by count (Graph 1)
-    st.markdown("<h3 style='font-size: 20px;'>1. Distribution of Foods</h3>", unsafe_allow_html=True)
-    fig1 = px.bar(
-        df_foods,
-        y='FOOD',
-        x='Count',
-        color='FOOD',
-        labels={'FOOD': 'Food Type', 'Count': 'Count'},
-        title='',  # Remove the title
-        orientation='h',  # Horizontal bar chart
-        width=900,  # Set width for the graph
-        height=400  # Adjust height to minimize white space
-    )
-    fig1.update_layout(showlegend=False)
-    st.plotly_chart(fig1, use_container_width=True)
-
-with col2:
-    # Pie chart for total view time by gender (Graph 2)
-    st.markdown("<h3 style='font-size: 20px;'>2. Total View Time by Gender</h3>", unsafe_allow_html=True)
-    fig2 = px.pie(
-        df_viewtime_gender,
-        names='GENDER',
-        values='TotalViewTime',
-        title='',
-        hole=0.4,  # Optional: Makes it a donut chart
-        width=900,  # Set width for the graph
-        height=400  # Adjust height
-    )
-    fig2.update_traces(textinfo='percent+label')  # Display percentages and labels in the pie chart
-    fig2.update_layout(showlegend=False)  # Remove the legend
-    st.plotly_chart(fig2, use_container_width=True)
-
-
-# Create the second row layout
-col3, col4 = st.columns([3, 3])  # Adjust proportions to allocate more space
-
-with col3:
-    # Use Plotly for interactive chart (Graph 3)
-    st.markdown("<h3 style='font-size: 20px;'>3. Food Distribution by Gender</h3>", unsafe_allow_html=True)
-    fig3 = px.bar(df_food_gender_pivot, barmode='stack', labels={'value': 'Count'},
-                  title='',  # Remove the title
-                  width=900,  # Set width for the graph
-                  height=400  # Adjust height
-    )
-    fig3.update_traces(texttemplate=None)  # Remove numbers from the bars
-    st.plotly_chart(fig3, use_container_width=True)
-
-with col4:
-    # Use Plotly for interactive chart (Graph 4)
+    # Graph 4: TreeMap with Total Viewtime by Region (New position)
     st.markdown("<h3 style='font-size: 20px;'>4. Total Viewtime by Region</h3>", unsafe_allow_html=True)
     # Ensure sorting is applied in ascending order
     df_viewtime_region_sorted = df_viewtime_region_filtered.sort_values(by='TotalViewTime', ascending=True)
@@ -178,7 +127,9 @@ with col4:
         labels={'TotalViewTime': 'Total View Time', 'REGIONID': 'Region ID'},
         title='',
         width=900,
-        height=400
+        height=400,
+        color='TotalViewTime',  # Color by Total View Time
+        color_continuous_scale=pink_colorscale  # Apply the pink color scale
     )
 
     # Display formatted values in the chart
@@ -189,3 +140,54 @@ with col4:
     )
     
     st.plotly_chart(fig4_treemap, use_container_width=True)
+
+with col2:
+    # Graph 3: Food Distribution by Gender (New position)
+    st.markdown("<h3 style='font-size: 20px;'>3. Food Distribution by Gender</h3>", unsafe_allow_html=True)
+    fig3 = px.bar(df_food_gender_pivot, barmode='stack', labels={'value': 'Count'},
+                  title='',  # Remove the title
+                  width=900,  # Set width for the graph
+                  height=400,  # Adjust height
+                  color_discrete_sequence=pink_colorscale  # Apply the pink color scale
+    )
+    fig3.update_traces(texttemplate=None)  # Remove numbers from the bars
+    st.plotly_chart(fig3, use_container_width=True)
+
+# Create the second row layout
+col3, col4 = st.columns([3, 3])  # Adjust proportions to allocate more space
+
+with col3:
+    # Graph 2: Pie chart for total view time by gender (New position)
+    st.markdown("<h3 style='font-size: 20px;'>2. Total View Time by Gender</h3>", unsafe_allow_html=True)
+    fig2 = px.pie(
+        df_viewtime_gender,
+        names='GENDER',
+        values='TotalViewTime',
+        title='',
+        hole=0.4,  # Optional: Makes it a donut chart
+        width=900,  # Set width for the graph
+        height=400,  # Adjust height
+        color='GENDER',  # Color by Gender
+        color_discrete_sequence=pink_colorscale  # Apply the pink color scale
+    )
+    fig2.update_traces(textinfo='percent+label')  # Display percentages and labels in the pie chart
+    fig2.update_layout(showlegend=False)  # Remove the legend
+    st.plotly_chart(fig2, use_container_width=True)
+
+with col4:
+    # Graph 1: Distribution of Foods (New position)
+    st.markdown("<h3 style='font-size: 20px;'>1. Distribution of Foods</h3>", unsafe_allow_html=True)
+    fig1 = px.bar(
+        df_foods,
+        y='FOOD',
+        x='Count',
+        color='FOOD',
+        labels={'FOOD': 'Food Type', 'Count': 'Count'},
+        title='',  # Remove the title
+        orientation='h',  # Horizontal bar chart
+        width=900,  # Set width for the graph
+        height=400,  # Adjust height to minimize white space
+        color_discrete_sequence=pink_colorscale  # Apply the pink color scale
+    )
+    fig1.update_layout(showlegend=False)
+    st.plotly_chart(fig1, use_container_width=True)
